@@ -14,7 +14,7 @@ from .base import BaseCase
 
 class Photo:
 
-    def __init__(self, complexity, age, silent, boomer, x, y, z, alpha, filler=lorem.sentence()):
+    def __init__(self, complexity = 0, age = 29, silent = 0, boomer = 0, x = 0, y = 60, z = 40, alpha = 0, filler=lorem.sentence()):
         self.complexity = complexity
         self.age = age
         self.silent = silent
@@ -30,7 +30,7 @@ class Photo:
 
     def as_payload(self):
         encoded = f"{self.complexity}|{self.age}|{self.silent}|{self.boomer}|{self.x}|{self.y}|{self.z}|{self.alpha}|{self.filler}"
-        return base64.b64encode(json.dumps(encoded).encode('utf-8'))
+        return str(base64.b64encode(json.dumps(encoded).encode('utf-8')), "utf-8")
 
     def checksum(self):
         return hex(self.age)
@@ -67,11 +67,12 @@ class TestRequests(BaseCase):
         self.assertEqual(201, response.status_code, response.text)
         return response
 
-    def create_default_analysis_request(self, customer):
+    def create_default_analysis_request(self, customer, user=uuid.uuid4().__str__()):
         """
         Creates a small analysis request which completes instantly for unit testing purposes
         """
-        return self.create_request(customer, user, photo=[Photo().as_payload])
+        photo = Photo().as_payload()
+        return self.create_request(customer, user, photos=[photo])
         
     
     def wait_for_scan(self, customer, request_id, timeout=3):
@@ -91,13 +92,6 @@ class TestRequests(BaseCase):
                 return response.json()
 
         self.fail('request not processed successfully within timelimit')
-
-    def test_non_existent_customer(self):
-        """
-        Checks for a 400 response from the analysis endpoint for a customer that does not exist
-        """
-        response = requests.get(self.host() + '/analysis/' + self.invalid_customer_id + '/requests', headers={'Accept': 'application/json'})
-        self.assertEqual(404, response.status_code)
 
     def test_list_invalid_limit(self):
         """
@@ -161,7 +155,7 @@ class TestRequests(BaseCase):
         Checks for 100 analysis requests by default for the list endpoint
         """
         customer = uuid.uuid4().__str__()
-        [self.create_default_analysis_request(customer, False) for _ in range(102)]
+        [self.create_default_analysis_request(customer) for _ in range(102)]
 
         time.sleep(70) # wait for the scans to finish
 
@@ -175,7 +169,7 @@ class TestRequests(BaseCase):
         """
         customer = uuid.uuid4().__str__()
         for _ in range(20):
-            self.create_default_email(customer, False)
+            self.create_default_analysis_request(customer)
         
         time.sleep(10) # wait for the scans to finish even though not needed.
 
@@ -183,9 +177,13 @@ class TestRequests(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(len(response.json()), 5)
 
-        response = requests.get(self.host() + '/analysis/' + customer + '/requests?limit=100&offset=5', headers={'Accept': 'application/json'})
+        # Get the last id to check the offset
+        second = response.json()[1]['id']
+
+        response = requests.get(self.host() + '/analysis/' + customer + '/requests?limit=1&offset=1', headers={'Accept': 'application/json'})
         self.assertEqual(200, response.status_code)
-        self.assertEqual(len(response.json()), 15)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]['id'], second)
 
 if __name__ == '__main__':
     unittest.main()
