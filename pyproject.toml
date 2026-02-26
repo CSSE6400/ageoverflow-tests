@@ -4,9 +4,10 @@ version = "0.1.0"
 description = ""
 authors = []
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.14"
+python = ">=3.12"
 pendulum = "^3.2.0"
 requests = "^2.32.5"
 rfc3339-validator = "^0.1.4"
