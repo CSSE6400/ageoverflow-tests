@@ -4,7 +4,7 @@ import requests
 from .base import BaseCase
 
 
-class TestUser(BaseCase):
+class TestHealth(BaseCase):
     def test_health(self):
         """
         Checks for a 200 response from the health endpoint
