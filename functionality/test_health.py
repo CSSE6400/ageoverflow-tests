@@ -1,17 +1,11 @@
-import unittest
 import requests
 
-from .base import BaseCase
+from functionality.conftest import api
 
 
-class TestHealth(BaseCase):
-    def test_health(self):
-        """
-        Checks for a 200 response from the health endpoint
-        """
-        response = requests.get(self.host() + '/health', headers={'Accept': 'application/json'})
-        self.assertEqual(200, response.status_code)
-
-
-if __name__ == '__main__':
-    unittest.main()
+def test_health():
+    """
+    Checks for a 200 response from the health endpoint
+    """
+    response = requests.get(api('/health'), headers={'Accept': 'application/json'})
+    assert response.status_code == 200

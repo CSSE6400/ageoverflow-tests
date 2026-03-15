@@ -13,6 +13,7 @@ requests = "^2.32.5"
 rfc3339-validator = "^0.1.4"
 lorem = "^0.1.1"
 pytest-github-report = "^0.0.1"
+pytest-timeout = "^2.4.0"
 
 
 [tool.poetry.group.dev.dependencies]
