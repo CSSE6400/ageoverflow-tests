@@ -4,10 +4,10 @@ import uuid
 import pytest
 import requests
 
-from functionality.conftest import api, create_untrusted_request, create_default_analysis_request, wait_for
+from functionality.conftest import api, create_untrusted_request, create_default_analysis_request, wait_for, new_uuid
 
 invalid_customer_id = "MillieWasHere"
-valid_customer_id = uuid.uuid4().__str__()
+valid_customer_id = new_uuid()
 
 def test_list_invalid_limit():
     """
@@ -61,8 +61,8 @@ def test_must_contain_photos():
     """
     Checks for a 400 response that the analysis requests endpoint correctly rejects inputs with no photo information
     """
-    customer = uuid.uuid4().__str__()
-    user = uuid.uuid4().__str__()
+    customer = new_uuid()
+    user = new_uuid()
     response = create_untrusted_request(customer, user, photos=[])
     assert response.status_code == 400
 
@@ -71,26 +71,24 @@ def test_list_default_length():
     """
     Checks for 100 analysis requests by default for the list endpoint
     """
-    customer = uuid.uuid4().__str__()
+    customer = new_uuid()
     items = [create_default_analysis_request(customer) for _ in range(102)]
 
     [wait_for(customer, item["id"]) for item in items]
-
-    time.sleep(70) # wait for the scans to finish
 
     response = requests.get(api('/analysis/' + customer + '/requests'), headers={'Accept': 'application/json'})
     assert response.status_code == 200
     assert len(response.json()) == 100
 
+@pytest.mark.timeout(300)
 def test_list_custom_length():
     """
     Checks custom lengths for the analysis requests endpoint, 5, 100 (with offset 5)
     """
-    customer = uuid.uuid4().__str__()
-    for _ in range(20):
-        create_default_analysis_request(customer)
+    customer = new_uuid()
+    items = [create_default_analysis_request(customer) for _ in range(20)]
 
-    time.sleep(10) # wait for the scans to finish even though not needed.
+    [wait_for(customer, item["id"]) for item in items]
 
     response = requests.get(api('/analysis/' + customer + '/requests?limit=5'), headers={'Accept': 'application/json'})
     assert response.status_code == 200
