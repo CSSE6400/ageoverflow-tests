@@ -76,7 +76,7 @@ class Photo:
 
     def as_payload(self):
         encoded = f"{self.complexity}|{self.age}|{self.silent}|{self.boomer}|{self.x}|{self.y}|{self.z}|{self.alpha}|{self.filler}"
-        return str(base64.b64encode(json.dumps(encoded).encode('utf-8')), "utf-8")
+        return str(base64.b64encode(encoded.encode('utf-8')), 'utf-8')
 
     def checksum(self):
         return hex(self.age)
