@@ -16,14 +16,14 @@ def api(path: str) -> str:
 def new_uuid() -> str:
     return str(uuid.uuid4())
 
-def wait_for(customer_id: str, request_id: str, timeout: int = 180, interval: int = 2) -> dict|None:
+def wait_for(customer: str, request_id: str, timeout: int = 180, interval: int = 2) -> dict|None:
     """Poll GET /analysis/{customer_id}/requests/{request_id} until status != 'pending'.
 
     Returns the final response dict, or None if timeout is reached.
     """
     deadline = time.time() + timeout
     while time.time() < deadline:
-        response = requests.get(api(f"/analysis/{customer_id}/requests/{request_id}"))
+        response = requests.get(api(f"/analysis/{customer}/requests/{request_id}"))
         if response.status_code == 200:
             data = response.json()
             if data.get("status") != "pending":
@@ -40,12 +40,12 @@ def create_untrusted_request(customer: str, user: str, photos: list[str], urgent
         })
     return response
 
-def create_request(customer: str, user: str, photos: list[str], urgent: bool = False) -> dict:
+def create(customer: str, user: str, photos: list[str], urgent: bool = False) -> dict:
     response = create_untrusted_request(customer, user, photos, urgent)
     assert response.status_code == 201
     return response.json()
 
-def create_default_analysis_request(customer: str, user: str|None = None, urgent: bool = False) -> dict:
+def create_default(customer: str, user: str | None = None, urgent: bool = False) -> dict:
     """
     Creates a small analysis request which completes instantly for unit testing purposes
     """
@@ -53,7 +53,15 @@ def create_default_analysis_request(customer: str, user: str|None = None, urgent
         user = new_uuid()
 
     photo = Photo().as_payload()
-    return create_request(customer, user, photos=[photo], urgent=urgent)
+    return create(customer, user, photos=[photo], urgent=urgent)
+
+def get(customer: str, request_id: str) -> dict:
+    """
+    Get a request by customer and request id
+    """
+    response = requests.get(api(f"/analysis/{customer}/requests/{request_id}"))
+    assert response.status_code == 200
+    return response.json()
 
 class Photo:
 

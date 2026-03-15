@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-from functionality.conftest import api, create_default_analysis_request, new_uuid, wait_for
+from functionality.conftest import api, create_default, new_uuid, wait_for
 
 invalid_customer_id = "MillieWasHere"
 valid_customer_id = new_uuid()
@@ -29,7 +29,7 @@ def test_list_default_length():
     Checks for 100 analysis requests by default for the list endpoint, each should get a unique UUIDv4 customer
     """
     customer = new_uuid()
-    items = [create_default_analysis_request(customer, user=new_uuid()) for _ in range(102)]
+    items = [create_default(customer, user=new_uuid()) for _ in range(102)]
 
     [wait_for(customer, item["id"]) for item in items]
 
@@ -43,7 +43,7 @@ def test_list_custom_length():
     Checks custom lengths for the analysis requests endpoint, 5, 100 (with offset 5)
     """
     customer = new_uuid()
-    items = [create_default_analysis_request(customer, user=new_uuid()) for _ in range(20)]
+    items = [create_default(customer, user=new_uuid()) for _ in range(20)]
 
     [wait_for(customer, item["id"]) for item in items]
 
