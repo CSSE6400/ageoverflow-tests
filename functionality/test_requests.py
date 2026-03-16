@@ -313,7 +313,7 @@ def test_list_requests_filter_date_dynamic():
 
     # Debugging
     print('start: ' + start.to_rfc3339_string())
-    print('email: ' + item['created_at'])
+    print('request_created_at: ' + item['created_at'])
     print('end: ' + end.to_rfc3339_string())
 
     time.sleep(5)
