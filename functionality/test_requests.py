@@ -1,15 +1,32 @@
 import time
-import uuid
+from urllib.parse import quote
 
+import pendulum
 import pytest
 import requests
 
 from rfc3339_validator import validate_rfc3339
 from functionality.conftest import api, create_untrusted_request, create_default, wait_for, new_uuid, \
-    Photo, get
+    Photo, get, Photos, create
 
 invalid_customer_id = "MillieWasHere"
 valid_customer_id = new_uuid()
+
+def check_request_item(item: dict):
+    for field in ('id', 'user_id', 'created_at', 'updated_at', 'status'):
+        assert field in item, f"Missing field: {field}"
+
+    assert item['status'] in ('success', 'pending', 'failed')
+
+    if item['status'] == 'success':
+        assert 'result' in item
+        for field in ('checksum', 'primary_generation', 'age'):
+            assert field in item['result'], f"Missing field: result.{field}"
+
+        assert 'generations' in item['result']
+        for field in ('silent', 'baby_boomers', 'x', 'y', 'z', 'alpha'):
+            assert field in item['result']['generations'], f"Missing field: result.generations.{field}"
+
 
 def test_list_invalid_customer():
     """
@@ -91,7 +108,8 @@ def test_basic():
     for field in ('id', 'user_id', 'created_at', 'updated_at', 'status'):
         assert field in item, f"Missing field: {field}"
 
-    wait_for(valid_customer_id, item['id'])
+    item = wait_for(valid_customer_id, item['id'])
+    assert item['status'] == 'success'
 
     assert 'result' in item
     for field in ('checksum', 'primary_generation', 'age'):
@@ -100,6 +118,22 @@ def test_basic():
     assert 'generations' in item['result']
     for field in ('silent', 'baby_boomers', 'x', 'y', 'z', 'alpha'):
         assert field in item['result']['generations'], f"Missing field: result.generations.{field}"
+
+def test_multiple():
+    """
+    Checks for a 201 response and the minimal structure of the analysis requests endpoint with multiple photos
+    """
+    photos = Photos([
+        Photo(complexity=0, age=22, silent=0, boomer=0, x=0, y=0, z=100, alpha=0),
+        Photo(complexity=0, age=28, silent=0, boomer=0, x=0, y=50, z=50, alpha=0)
+    ])
+    item = create(valid_customer_id, user=new_uuid(), photos=photos.as_payload())
+    item = wait_for(valid_customer_id, item['id'])
+    check_request_item(item)
+
+    assert item['result']['checksum'] == photos.checksum()
+
+
 
 def test_basic_read():
     """
@@ -109,16 +143,8 @@ def test_basic_read():
     wait_for(valid_customer_id, item['id'])
     item = get(valid_customer_id, item['id'])
 
-    for field in ('id', 'user_id', 'created_at', 'updated_at', 'status'):
-        assert field in item, f"Missing field: {field}"
-
-    assert 'result' in item
-    for field in ('checksum', 'primary_generation', 'age'):
-        assert field in item['result'], f"Missing field: result.{field}"
-
-    assert 'generations' in item['result']
-    for field in ('silent', 'baby_boomers', 'x', 'y', 'z', 'alpha'):
-        assert field in item['result']['generations'], f"Missing field: result.generations.{field}"
+    assert item['status'] == 'success'
+    check_request_item(item)
 
 def test_request_user_id():
     """
@@ -127,6 +153,16 @@ def test_request_user_id():
     user = new_uuid()
     item = create_default(valid_customer_id, user)
     assert item['user_id'] == user
+
+def test_request_matches():
+    """
+    Checks that a successful request matches the Post response and Get response
+    """
+    item_post = create_default(valid_customer_id)
+    item_get = get(valid_customer_id, item_post['id'])
+
+    assert item_post['user_id'] == item_get['user_id']
+    assert item_post['id'] == item_get['id']
 
 def test_request_timestamps_are_rfc3339():
     """
@@ -145,6 +181,27 @@ def test_request_urgent():
     wait_for(valid_customer_id, item['id'])
     get(valid_customer_id, item['id'])
 
+def test_request_not_found():
+    """
+    Checks for a 404 response when a request is not found
+    """
+    create_default(valid_customer_id) # creates the customer
+    response = requests.get(api(f"/analysis/{valid_customer_id}/requests/{new_uuid()}"), headers={'Accept': 'application/json'})
+    assert response.status_code == 404
+
+@pytest.mark.timeout(300)
+def test_request_wrong_customer():
+    """
+    Checks for a 404 response when a request is not found but does exist but under a different customer
+    """
+    first_customer = new_uuid()
+    first = create_default(first_customer) # creates the customer if needed
+
+    second_customer = new_uuid()
+    second = create_default(second_customer) # creates the customer if needed
+
+    response = requests.get(api(f"/analysis/{first_customer}/requests/{second['id']}"), headers={'Accept': 'application/json'})
+    assert response.status_code == 404
 
 @pytest.mark.timeout(300)
 def test_list_default_length():
@@ -163,21 +220,109 @@ def test_list_default_length():
 @pytest.mark.timeout(300)
 def test_list_custom_length():
     """
-    Checks custom lengths for the analysis requests endpoint, 5, 100 (with offset 5)
+    Checks custom lengths for the analysis requests endpoint
     """
-    items = [create_default(valid_customer_id) for _ in range(20)]
+    customer = new_uuid()
+    items = [create_default(customer) for _ in range(20)]
 
-    [wait_for(valid_customer_id, item['id']) for item in items]
+    [wait_for(customer, item['id']) for item in items]
 
-    response = requests.get(api('/analysis/' + valid_customer_id + '/requests?limit=5'), headers={'Accept': 'application/json'})
+    response = requests.get(api('/analysis/' + customer + '/requests?limit=5'), headers={'Accept': 'application/json'})
     assert response.status_code == 200
     assert len(response.json()) == 5
 
     # Get the last id to check the offset
     second = response.json()[1]['id']
 
-    response = requests.get(api('/analysis/' + valid_customer_id + '/requests?limit=1&offset=1'), headers={'Accept': 'application/json'})
+    response = requests.get(api('/analysis/' + customer + '/requests?limit=1&offset=1'), headers={'Accept': 'application/json'})
     assert response.status_code == 200
     assert len(response.json()) == 1
     assert response.json()[0]['id'] == second
+
+    response = requests.get(api('/analysis/' + customer + '/requests?offset=20'))
+    assert response.status_code == 200
+    assert len(response.json()) == 0
+
+@pytest.mark.timeout(300)
+def test_list_filter_user():
+    """
+    Filters the list request by userid
+    """
+    customer = new_uuid()
+    items = [create_default(customer) for _ in range(2)]
+
+    response = requests.get(api('/analysis/' + customer + '/requests'), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+    # Filters by a given userid
+    response = requests.get(api('/analysis/' + customer + f"/requests?user_id={items[0]['user_id']}"), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]['id'] == items[0]['id']
+
+    # Filters by an unknown userid
+    response = requests.get(api('/analysis/' + customer + f"/requests?user_id={new_uuid()}"), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 0
+
+@pytest.mark.timeout(300)
+def test_list_filter_status():
+    """
+    Filters the list request by status. Note this test is best effort due to the nature of it.
+    """
+    customer = new_uuid()
+    item = create_default(customer)
+    wait_for(customer, item['id'])
+
+    response = requests.get(api('/analysis/' + customer + '/requests?status=success'), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+@pytest.mark.timeout(30)
+def test_list_requests_filter_date():
+    """
+    Filters the list request by date
+    """
+    customer = new_uuid()
+    create_default(customer)
+
+    # Any start date in the far future should return empty
+    response = requests.get(api('/analysis/' + customer + '/requests?start=2099-01-01T00:00:00Z'),
+                            headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 0
+
+    # Any end date in the far past should return empty
+    response = requests.get(api('/analysis/' + customer + '/requests?end=2000-01-01T00:00:00Z'),
+                            headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 0
+
+@pytest.mark.timeout(30)
+def test_list_requests_filter_date_dynamic():
+    """
+    Filters the list request by date dynamically
+    """
+    customer = new_uuid()
+    start = pendulum.now().replace(microsecond=0)
+    item = create_default(customer)
+    time.sleep(2)
+    end = pendulum.now().replace(microsecond=0)
+
+    # Debugging
+    print('start: ' + start.to_rfc3339_string())
+    print('email: ' + item['created_at'])
+    print('end: ' + end.to_rfc3339_string())
+
+    time.sleep(5)
+    create_default(customer)
+
+
+    # Any start date in the far future should return empty
+    response = requests.get(api('/analysis/' + customer + f"/requests?start={quote(start.to_rfc3339_string())}&end={quote(end.to_rfc3339_string())}"),
+                            headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 1
 

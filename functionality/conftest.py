@@ -97,6 +97,9 @@ class Photos:
     def to_dict(self):
         return self.__dict__
 
+    def as_payload(self):
+        return [photo.as_payload() for photo in self.photos]
+
     def checksum(self):
         total = 0
         for photo in self.photos:
