@@ -18,14 +18,14 @@ def check_user(item: dict):
 
 def test_list_invalid_customer():
     """
-    Checks for a 400 response from the analysis requests endpoint for invalid limit values
+    Checks for a 400 response from the analysis users endpoint for an invalid customer id
     """
     response = requests.get(api('/analysis/' + invalid_customer_id + '/users'), headers={'Accept': 'application/json'})
     assert response.status_code == 400
 
 def test_list_invalid_limit():
     """
-    Checks for a 400 response from the analysis requests endpoint for invalid limit values
+    Checks for a 400 response from the analysis users endpoint for invalid limit values
     """
     response = requests.get(api('/analysis/' + valid_customer_id + '/users?limit=0'), headers={'Accept': 'application/json'})
     assert response.status_code == 400
@@ -35,7 +35,7 @@ def test_list_invalid_limit():
 
 def test_list_invalid_offset():
     """
-    Checks for a 400 response from the analysis requests endpoint for a negative offset
+    Checks for a 400 response from the analysis users endpoint for a negative offset
     """
     response = requests.get(api('/analysis/' + valid_customer_id + '/users?offset=-1'), headers={'Accept': 'application/json'})
     assert response.status_code == 400
@@ -43,7 +43,7 @@ def test_list_invalid_offset():
 @pytest.mark.timeout(300)
 def test_basic():
     """
-    Checks for 201 response and the structure of the analysis in the user endpoint
+    Checks for 200 response and the structure of the analysis results in the user endpoint
     """
     user = new_uuid()
     req = create_default(valid_customer_id, user=user)
@@ -70,7 +70,7 @@ def test_basic():
 
 def test_list():
     """
-    Checks for valid entries in the list endpoint
+    Checks for a single valid entry in the users list endpoint
     """
     user = new_uuid()
     req = create_default(valid_customer_id, user=user)
@@ -84,7 +84,7 @@ def test_list():
 
 def test_list_multiple():
     """
-    Checks for valid entries in the list endpoint (multiple)
+    Checks for multiple valid entries in the users list endpoint
     """
     customer = new_uuid()
     user_1 = new_uuid()
@@ -110,7 +110,7 @@ def test_list_multiple():
 @pytest.mark.timeout(300)
 def test_list_default_length():
     """
-    Checks for 100 analysis requests by default for the list endpoint, each should get a unique UUIDv4 customer
+    Checks for 100 analysis requests by default for the users list endpoint, each user should have a unique UUIDv4
     """
     customer = new_uuid()
     items = [create_default(customer, user=new_uuid()) for _ in range(102)]
@@ -124,7 +124,7 @@ def test_list_default_length():
 @pytest.mark.timeout(300)
 def test_list_custom_length():
     """
-    Checks custom lengths for the analysis requests endpoint, 5, 100 (with offset 5)
+    Checks custom lengths for the users list endpoint (5 and 1 with an offset of 1)
     """
     customer = new_uuid()
     items = [create_default(customer, user=new_uuid()) for _ in range(20)]
