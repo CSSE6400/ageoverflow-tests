@@ -47,7 +47,7 @@ def test_basic():
     """
     user = new_uuid()
     req = create_default(valid_customer_id, user=user)
-    wait_for(valid_customer_id, req["id"])
+    wait_for(valid_customer_id, req['id'])
 
     response = requests.get(api('/analysis/' + valid_customer_id + '/users/' + user), headers={'Accept': 'application/json'})
     assert response.status_code == 200
@@ -74,7 +74,7 @@ def test_list():
     """
     user = new_uuid()
     req = create_default(valid_customer_id, user=user)
-    wait_for(valid_customer_id, req["id"])
+    wait_for(valid_customer_id, req['id'])
 
     response = requests.get(api('/analysis/' + valid_customer_id + '/users'), headers={'Accept': 'application/json'})
     assert response.status_code == 200
@@ -90,12 +90,12 @@ def test_list_multiple():
     user_1 = new_uuid()
     photo_1 = Photo(complexity=0, age=22, silent=0, boomer=0, x=0, y=0, z=100, alpha=0)
     req = create(customer, user=user_1, photos=[photo_1.as_payload()])
-    wait_for(customer, req["id"])
+    wait_for(customer, req['id'])
 
     user_2 = new_uuid()
     photo_2 = Photo(complexity=0, age=28, silent=0, boomer=0, x=0, y=50, z=50, alpha=0)
     req = create(customer, user=user_2, photos=[photo_2.as_payload()])
-    wait_for(customer, req["id"])
+    wait_for(customer, req['id'])
 
     response = requests.get(api('/analysis/' + customer + '/users'), headers={'Accept': 'application/json'})
     assert response.status_code == 200
@@ -115,7 +115,7 @@ def test_list_default_length():
     customer = new_uuid()
     items = [create_default(customer, user=new_uuid()) for _ in range(102)]
 
-    [wait_for(customer, item["id"]) for item in items]
+    [wait_for(customer, item['id']) for item in items]
 
     response = requests.get(api('/analysis/' + customer + '/users'), headers={'Accept': 'application/json'})
     assert response.status_code == 200
@@ -129,7 +129,7 @@ def test_list_custom_length():
     customer = new_uuid()
     items = [create_default(customer, user=new_uuid()) for _ in range(20)]
 
-    [wait_for(customer, item["id"]) for item in items]
+    [wait_for(customer, item['id']) for item in items]
 
     response = requests.get(api('/analysis/' + customer + '/users?limit=5'), headers={'Accept': 'application/json'})
     assert response.status_code == 200
