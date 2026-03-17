@@ -7,6 +7,15 @@ A suite of tests for the AgeOverflow assignment written in python.
 
 ## Changes
 
+17/03/2026:
+
+- Release second round of tests (approx: 39 tests total)
+
+15/03/2026:
+
+- Moved to PyTest from UnitTest
+- FIX: bug in generation for photo string, had "" encoded in the Base64
+
 03/03/2026:
 
 - Released initial tests which cover some small validation.

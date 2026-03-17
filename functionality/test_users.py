@@ -1,66 +1,144 @@
-import time
-import unittest
-import uuid
+import pytest
 import requests
 
-from .base import BaseCase
+from functionality.conftest import api, create_default, new_uuid, wait_for, create, Photo
 
-class TestUsers(BaseCase):
+invalid_customer_id = "MillieWasHere"
+valid_customer_id = new_uuid()
 
-    invalid_customer_id = "MillieWasHere"
-    valid_customer_id = uuid.uuid4().__str__()
+def check_user(item: dict):
+    assert 'id' in item
+    assert 'results' in item
+    for result in item['results']:
+        assert 'id' in result
+        assert 'status' in result
+        assert 'checksum' in result
+        assert 'primary_generation' in result
+        assert 'age' in result
 
-    def test_list_invalid_limit(self):
-        """
-        Checks for a 400 response from the analysis requests endpoint for invalid limit values
-        """
-        response = requests.get(self.host() + '/analysis/' + self.valid_customer_id + '/users?limit=0', headers={'Accept': 'application/json'})
-        self.assertEqual(400, response.status_code)
+def test_list_invalid_customer():
+    """
+    Checks for a 400 response from the analysis requests endpoint for invalid limit values
+    """
+    response = requests.get(api('/analysis/' + invalid_customer_id + '/users'), headers={'Accept': 'application/json'})
+    assert response.status_code == 400
 
-        response = requests.get(self.host() + '/analysis/' + self.valid_customer_id + '/users?limit=2000', headers={'Accept': 'application/json'})
-        self.assertEqual(400, response.status_code)
+def test_list_invalid_limit():
+    """
+    Checks for a 400 response from the analysis requests endpoint for invalid limit values
+    """
+    response = requests.get(api('/analysis/' + valid_customer_id + '/users?limit=0'), headers={'Accept': 'application/json'})
+    assert response.status_code == 400
 
-    def test_list_invalid_offset(self):
-        """
-        Checks for a 400 response from the analysis requests endpoint for a negative offset
-        """
-        response = requests.get(self.host() + '/analysis/' + self.valid_customer_id + '/users?offset=-1', headers={'Accept': 'application/json'})
-        self.assertEqual(400, response.status_code)
+    response = requests.get(api('/analysis/' + valid_customer_id + '/users?limit=2000'), headers={'Accept': 'application/json'})
+    assert response.status_code == 400
 
-    def test_list_default_length(self):
-        """
-        Checks for 100 analysis requests by default for the list endpoint, each should get a unique UUIDv4 customer
-        """
-        customer = uuid.uuid4().__str__()
-        [self.create_default_analysis_request(customer, user=uuid.uuid4().__str__()) for _ in range(102)]
+def test_list_invalid_offset():
+    """
+    Checks for a 400 response from the analysis requests endpoint for a negative offset
+    """
+    response = requests.get(api('/analysis/' + valid_customer_id + '/users?offset=-1'), headers={'Accept': 'application/json'})
+    assert response.status_code == 400
 
-        time.sleep(70) # wait for the scans to finish
+@pytest.mark.timeout(300)
+def test_basic():
+    """
+    Checks for 201 response and the structure of the analysis in the user endpoint
+    """
+    user = new_uuid()
+    req = create_default(valid_customer_id, user=user)
+    wait_for(valid_customer_id, req['id'])
 
-        response = requests.get(self.host() + '/analysis/' + customer + '/users', headers={'Accept': 'application/json'})
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(len(response.json()), 100)
+    response = requests.get(api('/analysis/' + valid_customer_id + '/users/' + user), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
 
-    def test_list_custom_length(self):
-        """
-        Checks custom lengths for the analysis requests endpoint, 5, 100 (with offset 5)
-        """
-        customer = uuid.uuid4().__str__()
-        for _ in range(20):
-            self.create_default_analysis_request(customer, user=uuid.uuid4().__str__())
-        
-        time.sleep(10) # wait for the scans to finish even though not needed.
+    item = response.json()
+    assert 'id' in item
+    assert 'results' in item
+    assert len(item['results']) == 1
+    result = item['results'][0]
+    assert 'id' in result
+    assert result['id'] == req['id']
+    assert 'status' in result
+    assert result['status'] == 'success'
+    assert 'checksum' in result
+    assert result['checksum'] == '0x1d'
+    assert 'primary_generation' in result
+    assert result['primary_generation'] == 'y'
+    assert 'age' in result
+    assert result['age'] == 29
 
-        response = requests.get(self.host() + '/analysis/' + customer + '/users?limit=5', headers={'Accept': 'application/json'})
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(len(response.json()), 5)
+def test_list():
+    """
+    Checks for valid entries in the list endpoint
+    """
+    user = new_uuid()
+    req = create_default(valid_customer_id, user=user)
+    wait_for(valid_customer_id, req['id'])
 
-        # Get the last id to check the offset
-        second = response.json()[1]['id']
+    response = requests.get(api('/analysis/' + valid_customer_id + '/users'), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
 
-        response = requests.get(self.host() + '/analysis/' + customer + '/users?limit=1&offset=1', headers={'Accept': 'application/json'})
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]['id'], second)
+    for item in response.json():
+        check_user(item)
 
-if __name__ == '__main__':
-    unittest.main()
+def test_list_multiple():
+    """
+    Checks for valid entries in the list endpoint (multiple)
+    """
+    customer = new_uuid()
+    user_1 = new_uuid()
+    photo_1 = Photo(complexity=0, age=22, silent=0, boomer=0, x=0, y=0, z=100, alpha=0)
+    req = create(customer, user=user_1, photos=[photo_1.as_payload()])
+    wait_for(customer, req['id'])
+
+    user_2 = new_uuid()
+    photo_2 = Photo(complexity=0, age=28, silent=0, boomer=0, x=0, y=50, z=50, alpha=0)
+    req = create(customer, user=user_2, photos=[photo_2.as_payload()])
+    wait_for(customer, req['id'])
+
+    response = requests.get(api('/analysis/' + customer + '/users'), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+    ages = [photo_1.age, photo_2.age]
+
+    for item in response.json():
+        check_user(item)
+        assert item['results'][0]['age'] in ages
+
+@pytest.mark.timeout(300)
+def test_list_default_length():
+    """
+    Checks for 100 analysis requests by default for the list endpoint, each should get a unique UUIDv4 customer
+    """
+    customer = new_uuid()
+    items = [create_default(customer, user=new_uuid()) for _ in range(102)]
+
+    [wait_for(customer, item['id']) for item in items]
+
+    response = requests.get(api('/analysis/' + customer + '/users'), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 100
+
+@pytest.mark.timeout(300)
+def test_list_custom_length():
+    """
+    Checks custom lengths for the analysis requests endpoint, 5, 100 (with offset 5)
+    """
+    customer = new_uuid()
+    items = [create_default(customer, user=new_uuid()) for _ in range(20)]
+
+    [wait_for(customer, item['id']) for item in items]
+
+    response = requests.get(api('/analysis/' + customer + '/users?limit=5'), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 5
+
+    # Get the last id to check the offset
+    second = response.json()[1]['id']
+
+    response = requests.get(api('/analysis/' + customer + '/users?limit=1&offset=1'), headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]['id'] == second
