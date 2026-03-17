@@ -30,9 +30,9 @@ def check_request_item(item: dict):
 
 def test_list_invalid_customer():
     """
-    Checks for a 400 response from the analysis requests endpoint for invalid limit values
+    Checks for a 400 response from the analysis requests endpoint for an invalid customer id
     """
-    response = requests.get(api('/analysis/' + invalid_customer_id + '/requests?limit=0'), headers={'Accept': 'application/json'})
+    response = requests.get(api('/analysis/' + invalid_customer_id + '/requests'), headers={'Accept': 'application/json'})
     assert response.status_code == 400
 
 def test_list_invalid_limit():
@@ -62,7 +62,7 @@ def test_list_invalid_date():
     response = requests.get(api('/analysis/' + valid_customer_id + '/requests?end=not_a_time'), headers={'Accept': 'application/json'})
     assert response.status_code == 400
 
-def test_list_invalid_from():
+def test_list_invalid_user_id():
     """
     Checks for a 400 response from the analysis requests endpoint for an invalid user_id filter
     """
@@ -312,15 +312,15 @@ def test_list_requests_filter_date_dynamic():
     end = pendulum.now().replace(microsecond=0)
 
     # Debugging
-    print('start: ' + start.to_rfc3339_string())
-    print('request_created_at: ' + item['created_at'])
-    print('end: ' + end.to_rfc3339_string())
+    # print('start: ' + start.to_rfc3339_string())
+    # print('request_created_at: ' + item['created_at'])
+    # print('end: ' + end.to_rfc3339_string())
 
     time.sleep(5)
     create_default(customer)
 
 
-    # Any start date in the far future should return empty
+    # Should only find the analysis request sent between start and end
     response = requests.get(api('/analysis/' + customer + f"/requests?start={quote(start.to_rfc3339_string())}&end={quote(end.to_rfc3339_string())}"),
                             headers={'Accept': 'application/json'})
     assert response.status_code == 200

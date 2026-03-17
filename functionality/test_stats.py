@@ -18,14 +18,14 @@ def get_stats(customer_id):
 
 def test_list_invalid_customer():
     """
-    Checks for a 400 response from the statistics
+    Checks for a 400 response from the statistics endpoint for an invalid customer id
     """
     response = requests.get(api('/analysis/' + invalid_customer_id + '/statistics'), headers={'Accept': 'application/json'})
     assert response.status_code == 400
 
 def test_list_unknown_customer():
     """
-    Checks for a 404 response from the statistics
+    Checks for a 404 response from the statistics endpoint for a non-existent customer
     """
     response = requests.get(api('/analysis/' + new_uuid() + '/statistics'), headers={'Accept': 'application/json'})
     assert response.status_code == 404
@@ -33,7 +33,7 @@ def test_list_unknown_customer():
 @pytest.mark.timeout(480)
 def test_single_entry():
     """
-    Checks for statistical values for a single entry
+    Checks statistical values for a single entry
     """
     customer = new_uuid()
     item = create_default(customer, user=new_uuid())
@@ -57,9 +57,9 @@ def test_single_entry():
     _check()
 
 @pytest.mark.timeout(480)
-def test_multiple_entry():
+def test_two_entries():
     """
-    Checks for statistical values for a multiple entry
+    Checks statistical values for two entries
     """
     customer = new_uuid()
     user = new_uuid()
@@ -88,9 +88,9 @@ def test_multiple_entry():
     _check()
 
 @pytest.mark.timeout(360)
-def test_multiple_entry_again():
+def test_multiple_entries():
     """
-    Checks for statistical values for a multiple entry
+    Checks statistical values for multiple entries
     """
     customer = new_uuid()
     user = new_uuid()
