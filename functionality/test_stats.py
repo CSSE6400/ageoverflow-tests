@@ -134,8 +134,8 @@ def test_generated_at():
     @retry(AssertionError, tries=12, delay=30)
     def _check():
         response = requests.get(api(f"/analysis/{customer}/statistics"))
-        payload = response.json()
         assert response.status_code == 200
+        payload = response.json()
         assert payload['contents']['total_requests'] == 1
         assert validate_rfc3339(payload['generated_at']) is True
         assert pendulum.parse(payload['generated_at']) > start
