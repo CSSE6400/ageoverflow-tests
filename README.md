@@ -7,6 +7,10 @@ A suite of tests for the AgeOverflow assignment written in python.
 
 ## Changes
 
+21/03/2026:
+
+- FIX: was json parsing payload before checking for 200.
+
 17/03/2026:
 
 - Release second round of tests (approx: 39 tests total)
