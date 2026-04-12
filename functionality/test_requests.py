@@ -326,3 +326,36 @@ def test_list_requests_filter_date_dynamic():
     assert response.status_code == 200
     assert len(response.json()) == 1
 
+@pytest.mark.timeout(60)
+def test_list_requests_filter_multiple_date_dynamic():
+    """
+    Filters the list request by date dynamically, checking it only returns correct customer results
+    """
+    request_ids = []
+    customer1 = new_uuid()
+    customer2 = new_uuid()
+    create_default(customer1)
+    time.sleep(2)
+
+    start = pendulum.now().replace(microsecond=0)
+    item = create_default(customer1)
+    request_ids.append(item['id'])
+    item = create_default(customer1)
+    request_ids.append(item['id'])
+    create_default(customer2)
+    item = create_default(customer1)
+    request_ids.append(item['id'])
+    time.sleep(2)
+    end = pendulum.now().replace(microsecond=0)
+
+    time.sleep(3)
+    create_default(customer1)
+
+    # Should only find the analysis requests for customer1 sent between start and end
+    response = requests.get(api('/analysis/' + customer1 + f"/requests?start={quote(start.to_rfc3339_string())}&end={quote(end.to_rfc3339_string())}"),
+                            headers={'Accept': 'application/json'})
+    assert response.status_code == 200
+    assert len(response.json()) == len(request_ids)
+    # Check that only customer1 requests are returned
+    for i in range(len(request_ids)):
+        assert response.json()[i]['id'] in request_ids
