@@ -10,7 +10,7 @@ import {
 } from "../checks/analysis.js";
 
 const queriesTotal = new Counter("queries_total");
-const queryLatency = new Trend("query_latency");
+const queryDelay = new Trend("query_delay");
 const errors = new Counter("errors");
 
 function timedGet(url, tags) {
@@ -18,35 +18,64 @@ function timedGet(url, tags) {
   let res = http.get(url, { headers: { Accept: "application/json" } });
   let elapsed = Date.now() - start;
   queriesTotal.add(1, tags);
-  queryLatency.add(elapsed, tags);
+  queryDelay.add(elapsed, tags);
   return res;
 }
 
 export function queryUsersList(hostUrl, customer) {
   let url = hostUrl + "/analysis/" + customer + "/users";
   let res = timedGet(url, { endpoint: "/users", type: "list" });
-  check(res, checkUserList);
+
+  try {
+    let success = check(res, checkUserList);
+    if (!success) {
+      errors.add(1, { endpoint: "/users" });
+    }
+  } catch (e) {
+    errors.add(1, { endpoint: "/users" });
+  }
   return res;
 }
 
 export function queryRequestsList(hostUrl, customer, params) {
   let url = hostUrl + "/analysis/" + customer + "/requests";
   let res = timedGet(url, { endpoint: "/requests", type: "list" });
-  check(res, checkAnalysisList);
+  try {
+    let success = check(res, checkAnalysisList);
+    if (!success) {
+      errors.add(1, { endpoint: "/requests" });
+    }
+  } catch (e) {
+    errors.add(1, { endpoint: "/requests" });
+  }
   return res;
 }
 
 export function queryRequestById(hostUrl, customer, requestId) {
   let url = hostUrl + "/analysis/" + customer + "/requests/" + requestId;
   let res = timedGet(url, { endpoint: "/requests", type: "detail" });
-  check(res, checkCompletedAnalysis);
+  try {
+    let success = check(res, checkCompletedAnalysis);
+    if (!success) {
+      errors.add(1, { endpoint: "/requests/" + requestId });
+    }
+  } catch (e) {
+    errors.add(1, { endpoint: "/requests/" + requestId });
+  }
   return res;
 }
 
 export function queryStats(hostUrl, customer) {
   let url = hostUrl + "/analysis/" + customer + "/statistics";
   let res = timedGet(url, { endpoint: "/statistics", type: "stats" });
-  check(res, checkStats);
+  try {
+    let success = check(res, checkStats);
+    if (!success) {
+      errors.add(1, { endpoint: "/statistics" });
+    }
+  } catch (e) {
+    errors.add(1, { endpoint: "/statistics" });
+  }
   return res;
 }
 
