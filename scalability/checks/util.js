@@ -1,9 +1,9 @@
-export function ignoreCheck(obj, checks, tags) {
-    for (let i = 0; i < checks.length; i++) {
-        const check = checks[i];
-        if (!check(obj)) {
-            return false;
-        }
-    }
-    return true;
+import { check } from "k6";
+
+export function ignoreCheck(response, checkFn) {
+  try {
+    return check(response, checkFn);
+  } catch (e) {
+    return false;
+  }
 }

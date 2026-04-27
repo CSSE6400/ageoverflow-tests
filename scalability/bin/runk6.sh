@@ -10,4 +10,6 @@ function k6run {
 
 mkdir -p logs
 
-k6run 0_debug
+# k6run 0_debug
+k6run 1_normal
+k6run 3_compliance_early

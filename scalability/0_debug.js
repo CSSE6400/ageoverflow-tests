@@ -1,33 +1,46 @@
 import { sleep } from "k6";
-import { healer } from "./workflows/healer.js";
+import { submitter } from "./workflows/submitter.js";
+import {
+  queryRequestsList,
+  queryUsersList,
+  queryStats,
+} from "./workflows/querier.js";
 
-export const options = {
-    scenarios: {
-        generic: {
-            executor: "ramping-vus",
-            stages: [
-                { duration: "1m", target: 10 },
-            ],
-            exec: 'generalSubmitter',
-        },
+const BASE_URL = __ENV.TEST_HOST;
+
+export let options = {
+  scenarios: {
+    smoke: {
+      executor: "per-vu-iterations",
+      vus: 2,
+      iterations: 2,
+      maxDuration: "60s",
     },
-    tags: {
-        scenario: "0_debug",
-    },
-    minIterationDuration: '10s'
+  },
+  thresholds: {
+    errors: ["count<1"],
+  },
 };
 
 export function setup() {
-    return {};
+  let customer = crypto.randomUUID();
+  let userIds = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
+  return {
+    customers: [customer],
+    userIds: userIds,
+    tag: "debug",
+    generator: "quick",
+    urgentRatio: 0.0,
+  };
 }
 
-export const MAX_ITERATIONS = 2;
+export default function (data) {
+  let host = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
 
-export function generalSubmitter(data) {
-    if (__ITER >= MAX_ITERATIONS) {
-        return;
-    }
+  submitter(data, 30);
+  sleep(1);
 
-    healer(data);
-    sleep(10);
+  queryRequestsList(host, data.customers[0]);
+  queryUsersList(host, data.customers[0]);
+  queryStats(host, data.customers[0]);
 }
