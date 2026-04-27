@@ -52,7 +52,7 @@ export class Photo {
   }
 
   asPayload() {
-    let raw = `$${this.complexity}|${this.age}|${this.silent}|${this.boomer}|${this.x}|${this.y}|${this.z}|${this.alpha}|${this.filler}`;
+    let raw = `${this.complexity}|${this.age}|${this.silent}|${this.boomer}|${this.x}|${this.y}|${this.z}|${this.alpha}|${this.filler}`;
     return encoding.b64encode(raw);
   }
 
