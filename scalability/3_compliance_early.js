@@ -17,7 +17,7 @@ export let options = {
       startRate: 5,
       timeUnit: "1m",
       preAllocatedVUs: 3,
-      maxVUS: 20,
+      maxVUs: 20,
       stages: [
         { duration: "2m", target: 10 },
         { duration: "3m", target: 40 },

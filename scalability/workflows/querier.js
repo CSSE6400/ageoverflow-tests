@@ -1,7 +1,6 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Trend } from "k6/metrics";
-
 import {
   checkUserList,
   checkUser,
@@ -37,6 +36,13 @@ export function queryRequestsList(hostUrl, customer, params) {
   return res;
 }
 
+export function queryRequestById(hostUrl, customer, requestId) {
+  let url = hostUrl + "/analysis/" + customer + "/requests/" + requestId;
+  let res = timedGet(url, { endpoint: "/requests", type: "detail" });
+  check(res, checkCompletedAnalysis);
+  return res;
+}
+
 export function queryStats(hostUrl, customer) {
   let url = hostUrl + "/analysis/" + customer + "/statistics";
   let res = timedGet(url, { endpoint: "/statistics", type: "stats" });
@@ -48,7 +54,16 @@ export function queryBatchUserResults(hostUrl, customers) {
   for (let i = 0; i < customers.length; i++) {
     let customer = customers[i];
     queryUsersList(hostUrl, customer);
-    queryRequestsList(hostUrl, customer);
+
     sleep(0.5);
+
+    let res = queryRequestsList(hostUrl, customer, { status: "pending" });
+    if (res.status === 200 && Array.isArray(res.json())) {
+      let pending = res.json();
+      for (let i = 0; i < pending.length; i++) {
+        queryRequestById(hostUrl, customer, pending[i].id);
+        sleep(0.5);
+      }
+    }
   }
 }

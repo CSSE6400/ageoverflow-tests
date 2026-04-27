@@ -1,7 +1,6 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Trend } from "k6/metrics";
-
 import { checkAnalysis, checkCompletedAnalysis } from "../checks/analysis.js";
 import { ignoreCheck } from "../checks/util.js";
 import { getPhotos } from "../data/photo.js";
@@ -59,20 +58,20 @@ export function submitter(data, timeout = 60) {
 
   // Check if completed
   while (timeout > 0) {
-    let poll = http.get(url + "/" + requestId, {
+    let analysis = http.get(url + "/" + requestId, {
       headers: { Accept: "application/json" },
     });
 
-    let completed = ignoreCheck(poll, checkCompletedAnalysis);
-    if (completed && poll.json().status !== "pending") {
+    let completed = ignoreCheck(analysis, checkCompletedAnalysis);
+    if (completed && analysis.json().status !== "pending") {
       let endTime = Date.now();
       let timeDifference = (endTime - startTime) / 1000;
       analysesCompleted.add(1, { tag: data.tag });
       completionDelay.add(timeDifference, { tag: data.tag });
 
       if (
-        poll.json().result &&
-        poll.json().result.checksum === photoData.checksum
+        analysis.json().result &&
+        analysis.json().result.checksum === photoData.checksum
       ) {
         analysesCorrect.add(1, { tag: data.tag });
       }
