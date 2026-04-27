@@ -29,6 +29,7 @@ function loremGenerator(numWords) {
 
 export class Photo {
   constructor(
+    complexity = 8,
     age = 29,
     silent = 0,
     boomer = 0,
@@ -38,6 +39,7 @@ export class Photo {
     alpha = 0,
     filler = null,
   ) {
+    this.complexity = complexity;
     this.age = age;
     this.silent = silent;
     this.boomer = boomer;
@@ -50,7 +52,7 @@ export class Photo {
   }
 
   asPayload() {
-    let raw = `${this.age}|${this.silent}|${this.boomer}|${this.x}|${this.y}|${this.z}|${this.alpha}|${this.filler}`;
+    let raw = `$${this.complexity}|${this.age}|${this.silent}|${this.boomer}|${this.x}|${this.y}|${this.z}|${this.alpha}|${this.filler}`;
     return encoding.b64encode(raw);
   }
 
@@ -59,31 +61,34 @@ export class Photo {
   }
 }
 
-export function normalPhoto() {
+export function normalPhoto(complexity) {
   let age = randomIntBetween(18, 80);
-  return new Photo(age);
+  return new Photo(complexity, age);
 }
 
 export function getPhotos(generator) {
-  let count;
+  let complexity, count;
+
   switch (generator) {
     case "quick":
+      complexity = 8;
       count = 1;
       break;
     case "heavy":
-    case "peak":
-      count = randomIntBetween(10, 30);
+      complexity = randomIntBetween(13, 16);
+      count = 1;
       break;
     case "normal":
     default:
-      count = randomIntBetween(1, 10);
+      complexity = randomIntBetween(8, 16);
+      count = randomIntBetween(1, 2);
       break;
   }
 
   let payloads = [];
   let totalAge = 0;
   for (let i = 0; i < count; i++) {
-    let photo = normalPhoto();
+    let photo = normalPhoto(complexity);
     payloads.push(photo.asPayload());
     totalAge += photo.age;
   }
