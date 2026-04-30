@@ -20,6 +20,7 @@ export let options = {
     readers: {
       executor: "ramping-vus",
       startVUs: 0,
+      startTime: "1m",
       stages: [
         { duration: "2m", target: 3 },
         { duration: "3m", target: 10 },
