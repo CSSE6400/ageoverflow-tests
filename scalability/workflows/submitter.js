@@ -56,6 +56,11 @@ export function submitter(data, timeout = 60) {
 
   let requestId = res.json().id;
 
+  // Wait for expected processing time before polling
+  let initialWait = photoData.expectedDelay || 5;
+  sleep(initialWait);
+  timeout -= initialWait;
+
   // Check if completed
   while (timeout > 0) {
     let analysis = http.get(url + "/" + requestId, {

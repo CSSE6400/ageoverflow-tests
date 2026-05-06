@@ -37,6 +37,20 @@ export function queryUsersList(hostUrl, customer) {
   return res;
 }
 
+export function queryUserById(hostUrl, customer, userId) {
+  let url = hostUrl + "/analysis/" + customer + "/users/" + userId;
+  let res = timedGet(url, { endpoint: "/users", type: "detail" });
+  try {
+    let success = check(res, checkUser);
+    if (!success) {
+      errors.add(1, { endpoint: "/users/" + userId });
+    }
+  } catch (e) {
+    errors.add(1, { endpoint: "/users/" + userId });
+  }
+  return res;
+}
+
 export function queryRequestsList(hostUrl, customer, params) {
   let url = hostUrl + "/analysis/" + customer + "/requests";
   let res = timedGet(url, { endpoint: "/requests", type: "list" });
@@ -79,6 +93,17 @@ export function queryStats(hostUrl, customer) {
   return res;
 }
 
+export function pollPendingRequests(hostUrl, customer) {
+  let res = queryRequestsList(hostUrl, customer, { status: "pending" });
+  if (res.status === 200 && Array.isArray(res.json())) {
+    let pending = res.json();
+    for (let i = 0; i < pending.length; i++) {
+      queryRequestById(hostUrl, customer, pending[i].id);
+      sleep(0.5);
+    }
+  }
+}
+
 export function queryBatchUserResults(hostUrl, customers) {
   for (let i = 0; i < customers.length; i++) {
     let customer = customers[i];
@@ -86,13 +111,16 @@ export function queryBatchUserResults(hostUrl, customers) {
 
     sleep(0.5);
 
-    let res = queryRequestsList(hostUrl, customer, { status: "pending" });
-    if (res.status === 200 && Array.isArray(res.json())) {
-      let pending = res.json();
-      for (let i = 0; i < pending.length; i++) {
-        queryRequestById(hostUrl, customer, pending[i].id);
-        sleep(0.5);
-      }
-    }
+    pollPendingRequests(hostUrl, customer);
+
+    sleep(0.5);
+  }
+}
+
+export function queryUserResults(hostUrl, customer, userIds) {
+  for (let i = 0; i < userIds.length; i++) {
+    let userId = userIds[i];
+    queryUserById(hostUrl, customer, userId);
+    sleep(0.5);
   }
 }

@@ -55,7 +55,6 @@ export function setup() {
     tag: "compliance_early",
     generator: "normal",
     urgentRatio: 0.05,
-    photoComplexity: 4,
   };
 }
 
