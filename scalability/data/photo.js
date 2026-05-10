@@ -93,21 +93,8 @@ export function getPhotos(generator) {
     totalAge += photo.age;
   }
 
-  // Expected processing delay based on engine benchmarks
-  let expectedDelay;
-  if (complexity <= 10) {
-    expectedDelay = 1;
-  } else if (complexity <= 12) {
-    expectedDelay = 2;
-  } else if (complexity <= 16) {
-    expectedDelay = 5;
-  } else {
-    expectedDelay = 18;
-  }
-
   return {
     payloads: payloads,
     checksum: "0x" + totalAge.toString(16),
-    expectedDelay: expectedDelay,
   };
 }
