@@ -53,7 +53,7 @@ export function setup() {
   let customers = [];
   let userIds = [];
   for (let i = 0; i < 20; i++) customers.push(crypto.randomUUID());
-  for (let i = 0; i < 100; i++) userIds.push(crypto.randomUUID());
+  for (let i = 0; i < 70; i++) userIds.push(crypto.randomUUID());
   return {
     customers: customers,
     userIds: userIds,
