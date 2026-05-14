@@ -74,7 +74,7 @@ export function auditBatch(data) {
   // Moderate batch queries
   let batchSize = randomIntBetween(4, data.customers.length);
   let startIdx = Math.floor(
-    Math.random() * (data.customers.length - batchSize),
+    Math.random() * Math.max(1, data.customers.length - batchSize),
   );
   let batch = data.customers.slice(startIdx, startIdx + batchSize);
   queryBatchUserResults(host, batch);
