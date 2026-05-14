@@ -84,11 +84,9 @@ export function auditBatch(data) {
   queryBatchUserResults(host, data.customers);
   sleep(1);
 
-  // Per-user queries
-  let customer =
-    data.customers[Math.floor(Math.random() * data.customers.length)];
+  // Per-user queries across all customers
   for (let i = 0; i < data.customers.length; i++) {
-    customer = data.customers[i];
+    const customer = data.customers[i];
     queryUserResults(host, customer, data.userIds);
     sleep(1);
   }

@@ -13,7 +13,13 @@ const queriesTotal = new Counter("queries_total");
 const queryDelay = new Trend("query_delay");
 const errors = new Counter("errors");
 
-function timedGet(url, tags) {
+function timedGet(url, tags, params) {
+  if (params) {
+    let query = Object.entries(params)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join("&");
+    url = url + "?" + query;
+  }
   let start = Date.now();
   let res = http.get(url, { headers: { Accept: "application/json" } });
   let elapsed = Date.now() - start;
@@ -53,7 +59,7 @@ export function queryUserById(hostUrl, customer, userId) {
 
 export function queryRequestsList(hostUrl, customer, params) {
   let url = hostUrl + "/analysis/" + customer + "/requests";
-  let res = timedGet(url, { endpoint: "/requests", type: "list" });
+  let res = timedGet(url, { endpoint: "/requests", type: "list" }, params);
   try {
     let success = check(res, checkAnalysisList);
     if (!success) {
