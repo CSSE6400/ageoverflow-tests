@@ -1,5 +1,4 @@
 import { sleep } from "k6";
-import exec from "k6/execution";
 import { submitter } from "./workflows/submitter.js";
 import { queryUsersList, queryUserById } from "./workflows/querier.js";
 
