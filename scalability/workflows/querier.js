@@ -32,15 +32,18 @@ export function queryUsersList(hostUrl, customer) {
   let url = hostUrl + "/analysis/" + customer + "/users";
   let res = timedGet(url, { endpoint: "/users", type: "list" });
 
+  let users = null;
   try {
     let success = check(res, checkUserList);
-    if (!success) {
+    if (success) {
+      users = res.json();
+    } else {
       errors.add(1, { endpoint: "/users" });
     }
   } catch (e) {
     errors.add(1, { endpoint: "/users" });
   }
-  return res;
+  return { res: res, users: users };
 }
 
 export function queryUserById(hostUrl, customer, userId) {
@@ -60,15 +63,18 @@ export function queryUserById(hostUrl, customer, userId) {
 export function queryRequestsList(hostUrl, customer, params) {
   let url = hostUrl + "/analysis/" + customer + "/requests";
   let res = timedGet(url, { endpoint: "/requests", type: "list" }, params);
+  let items = null;
   try {
     let success = check(res, checkAnalysisList);
-    if (!success) {
+    if (success) {
+      items = res.json();
+    } else {
       errors.add(1, { endpoint: "/requests" });
     }
   } catch (e) {
     errors.add(1, { endpoint: "/requests" });
   }
-  return res;
+  return { res: res, items: items };
 }
 
 export function queryRequestById(hostUrl, customer, requestId) {
@@ -100,11 +106,10 @@ export function queryStats(hostUrl, customer) {
 }
 
 export function pollPendingRequests(hostUrl, customer) {
-  let res = queryRequestsList(hostUrl, customer, { status: "pending" });
-  if (res.status === 200 && Array.isArray(res.json())) {
-    let pending = res.json();
-    for (let i = 0; i < pending.length; i++) {
-      queryRequestById(hostUrl, customer, pending[i].id);
+  let result = queryRequestsList(hostUrl, customer, { status: "pending" });
+  if (result.items) {
+    for (let i = 0; i < result.items.length; i++) {
+      queryRequestById(hostUrl, customer, result.items[i].id);
       sleep(0.5);
     }
   }
@@ -123,10 +128,15 @@ export function queryBatchUserResults(hostUrl, customers) {
   }
 }
 
-export function queryUserResults(hostUrl, customer, userIds) {
-  for (let i = 0; i < userIds.length; i++) {
-    let userId = userIds[i];
-    queryUserById(hostUrl, customer, userId);
+export function queryUserResults(hostUrl, customer, maxUsers) {
+  let res = queryUsersList(hostUrl, customer);
+  let users = res.users;
+  if (!users) {
+    return;
+  }
+  let limit = maxUsers || users.length;
+  for (let i = 0; i < Math.min(users.length, limit); i++) {
+    queryUserById(hostUrl, customer, users[i].id);
     sleep(0.5);
   }
 }

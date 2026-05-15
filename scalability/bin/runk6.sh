@@ -12,7 +12,7 @@ mkdir -p logs
 
 # k6run 0_debug
 k6run 1_normal
-k6run 2_compliance
+k6run 2_curiosity
 k6run 3_compliance_early
 k6run 4_compliance_mid
 k6run 5_compliance_peak

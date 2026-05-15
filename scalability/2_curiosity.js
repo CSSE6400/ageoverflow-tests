@@ -21,7 +21,7 @@ export let options = {
       preAllocatedVUs: 200,
       maxVUs: 500,
       stages: [
-        //  generate ~60k requests in the 2-minute sustained burst (500 req/s × 120s)
+        // generate ~60k requests in the 2-minute sustained burst (500 req/s × 120s)
         { duration: "30s", target: 500 }, // ramp to 500 req/s
         { duration: "2m", target: 500 }, // sustain ~60k requests
         { duration: "30s", target: 10 }, // cool down
@@ -38,7 +38,6 @@ export function setup() {
   for (let i = 0; i < 50; i++) userIds.push(crypto.randomUUID());
   return {
     customers: customers,
-    portalCustomer: customers[0],
     userIds: userIds,
     tag: "curiosity",
     generator: "normal",
@@ -47,27 +46,22 @@ export function setup() {
 }
 
 export function submitRequests(data) {
-  // Propagate all user IDs to ensure each has data before auditor starts
-  // Use modulo to loop back to the start if iterations exceed data length
-  let idx = exec.scenario.iterationInTest % data.userIds.length;
-  let scoped = Object.assign({}, data, {
-    customers: [data.portalCustomer],
-    userIds: [data.userIds[idx]],
-  });
-  submitter(scoped);
+  submitter(data);
   sleep(5);
 }
 
 export function auditorRead(data) {
   let host = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
-  let customer = data.portalCustomer;
+  let customer = data.customers[0];
 
   // Query list of users for the customer
-  queryUsersList(host, customer);
+  let res = queryUsersList(host, customer);
   sleep(1);
 
-  // Query individual user results
-  let userId = data.userIds[Math.floor(Math.random() * data.userIds.length)];
-  queryUserById(host, customer, userId);
+  // Query a random user discovered from the list endpoint
+  if (res.users && res.users.length > 0) {
+    let user = res.users[Math.floor(Math.random() * res.users.length)];
+    queryUserById(host, customer, user.id);
+  }
   sleep(1);
 }

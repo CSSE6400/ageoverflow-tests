@@ -114,13 +114,9 @@ export function heavyAudit(data) {
   queryBatchUserResults(host, batch);
   sleep(1);
 
-  // Large per-user queries
+  // Large per-user queries max 50 users
   let customer =
     data.customers[Math.floor(Math.random() * data.customers.length)];
-  let userBatch = data.userIds.slice(
-    0,
-    randomIntBetween(5, data.userIds.length),
-  );
-  queryUserResults(host, customer, userBatch);
+  queryUserResults(host, customer, 50);
   sleep(5);
 }

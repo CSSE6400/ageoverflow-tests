@@ -60,10 +60,9 @@ export function researchScan(data) {
     sleep(1);
 
     // Query each request result for this customer
-    if (res.status === 200 && Array.isArray(res.json())) {
-      let requests = res.json();
-      for (let j = 0; j < requests.length; j++) {
-        queryRequestById(host, customer, requests[j].id);
+    if (res.items) {
+      for (let j = 0; j < res.items.length; j++) {
+        queryRequestById(host, customer, res.items[j].id);
         sleep(0.5);
       }
     }

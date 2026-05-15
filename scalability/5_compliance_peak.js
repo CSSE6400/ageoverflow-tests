@@ -53,7 +53,7 @@ export function setup() {
   let customers = [];
   let userIds = [];
   for (let i = 0; i < 20; i++) customers.push(crypto.randomUUID());
-  for (let i = 0; i < 70; i++) userIds.push(crypto.randomUUID());
+  for (let i = 0; i < 90; i++) userIds.push(crypto.randomUUID());
   return {
     customers: customers,
     userIds: userIds,
@@ -73,8 +73,11 @@ export function readResults(data) {
   let customer =
     data.customers[Math.floor(Math.random() * data.customers.length)];
 
+  // List requests, then re-query any that are still pending
   queryRequestsList(host, customer);
-  sleep(10);
+  sleep(1);
+  pollPendingRequests(host, customer);
+  sleep(5);
 }
 
 export function auditBatch(data) {
@@ -87,7 +90,7 @@ export function auditBatch(data) {
   // Per-user queries across all customers
   for (let i = 0; i < data.customers.length; i++) {
     const customer = data.customers[i];
-    queryUserResults(host, customer, data.userIds);
+    queryUserResults(host, customer);
     sleep(1);
   }
   sleep(1);
