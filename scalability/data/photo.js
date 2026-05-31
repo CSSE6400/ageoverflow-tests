@@ -75,12 +75,12 @@ export function getPhotos(generator) {
       count = 1;
       break;
     case "heavy":
-      complexity = randomIntBetween(13, 16);
+      complexity = randomIntBetween(13, 20);
       count = 1;
       break;
     case "normal":
     default:
-      complexity = randomIntBetween(8, 16);
+      complexity = randomIntBetween(8, 20);
       count = randomIntBetween(1, 2);
       break;
   }

@@ -13,7 +13,13 @@ const queriesTotal = new Counter("queries_total");
 const queryDelay = new Trend("query_delay");
 const errors = new Counter("errors");
 
-function timedGet(url, tags) {
+function timedGet(url, tags, params) {
+  if (params) {
+    let query = Object.entries(params)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join("&");
+    url = url + "?" + query;
+  }
   let start = Date.now();
   let res = http.get(url, { headers: { Accept: "application/json" } });
   let elapsed = Date.now() - start;
@@ -26,29 +32,49 @@ export function queryUsersList(hostUrl, customer) {
   let url = hostUrl + "/analysis/" + customer + "/users";
   let res = timedGet(url, { endpoint: "/users", type: "list" });
 
+  let users = null;
   try {
     let success = check(res, checkUserList);
-    if (!success) {
+    if (success) {
+      users = res.json();
+    } else {
       errors.add(1, { endpoint: "/users" });
     }
   } catch (e) {
     errors.add(1, { endpoint: "/users" });
+  }
+  return { res: res, users: users };
+}
+
+export function queryUserById(hostUrl, customer, userId) {
+  let url = hostUrl + "/analysis/" + customer + "/users/" + userId;
+  let res = timedGet(url, { endpoint: "/users", type: "detail" });
+  try {
+    let success = check(res, checkUser);
+    if (!success) {
+      errors.add(1, { endpoint: "/users/" + userId });
+    }
+  } catch (e) {
+    errors.add(1, { endpoint: "/users/" + userId });
   }
   return res;
 }
 
 export function queryRequestsList(hostUrl, customer, params) {
   let url = hostUrl + "/analysis/" + customer + "/requests";
-  let res = timedGet(url, { endpoint: "/requests", type: "list" });
+  let res = timedGet(url, { endpoint: "/requests", type: "list" }, params);
+  let items = null;
   try {
     let success = check(res, checkAnalysisList);
-    if (!success) {
+    if (success) {
+      items = res.json();
+    } else {
       errors.add(1, { endpoint: "/requests" });
     }
   } catch (e) {
     errors.add(1, { endpoint: "/requests" });
   }
-  return res;
+  return { res: res, items: items };
 }
 
 export function queryRequestById(hostUrl, customer, requestId) {
@@ -79,6 +105,16 @@ export function queryStats(hostUrl, customer) {
   return res;
 }
 
+export function pollPendingRequests(hostUrl, customer) {
+  let result = queryRequestsList(hostUrl, customer, { status: "pending" });
+  if (result.items) {
+    for (let i = 0; i < result.items.length; i++) {
+      queryRequestById(hostUrl, customer, result.items[i].id);
+      sleep(0.5);
+    }
+  }
+}
+
 export function queryBatchUserResults(hostUrl, customers) {
   for (let i = 0; i < customers.length; i++) {
     let customer = customers[i];
@@ -86,13 +122,21 @@ export function queryBatchUserResults(hostUrl, customers) {
 
     sleep(0.5);
 
-    let res = queryRequestsList(hostUrl, customer, { status: "pending" });
-    if (res.status === 200 && Array.isArray(res.json())) {
-      let pending = res.json();
-      for (let i = 0; i < pending.length; i++) {
-        queryRequestById(hostUrl, customer, pending[i].id);
-        sleep(0.5);
-      }
-    }
+    pollPendingRequests(hostUrl, customer);
+
+    sleep(0.5);
+  }
+}
+
+export function queryUserResults(hostUrl, customer, maxUsers) {
+  let res = queryUsersList(hostUrl, customer);
+  let users = res.users;
+  if (!users) {
+    return;
+  }
+  let limit = maxUsers || users.length;
+  for (let i = 0; i < Math.min(users.length, limit); i++) {
+    queryUserById(hostUrl, customer, users[i].id);
+    sleep(0.5);
   }
 }
