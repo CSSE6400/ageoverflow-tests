@@ -56,12 +56,11 @@ export function submitter(data, timeout = 60) {
 
   let requestId = res.json().id;
 
-  // Wait for expected processing time before polling
-  sleep(5);
-  timeout -= 5;
-
   // Check if completed
-  while (timeout > 0) {
+  do {
+    timeout -= 5;
+    sleep(5);
+
     let analysis = http.get(url + "/" + requestId, {
       headers: { Accept: "application/json" },
     });
@@ -81,8 +80,5 @@ export function submitter(data, timeout = 60) {
       }
       return;
     }
-
-    timeout -= 5;
-    sleep(5);
-  }
+  } while (timeout > 0)
 }
