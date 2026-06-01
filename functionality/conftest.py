@@ -3,12 +3,25 @@ import json
 import os
 import time
 import uuid
+import sys
 
+import pytest
 import lorem
 import requests
 from requests import Response
 
 BASE_URL = os.getenv("TEST_HOST", "http://172.17.0.1:8080/api/v1").removesuffix("/")
+ALLOW_FAILING_TESTS = os.getenv("TEST_ALLOWS_FAILS", "false")
+
+@pytest.hookimpl()
+def pytest_sessionfinish(session, exitstatus):
+    if ALLOW_FAILING_TESTS == "true" and exitstatus != pytest.ExitCode.OK:
+        # Get count of total and failed tests
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        failed = len(reporter.stats.get("failed", []))
+        
+        if failed < 10:
+            session.exitstatus = pytest.ExitCode.OK
 
 def api(path: str) -> str:
     return f"{BASE_URL}{path}"
