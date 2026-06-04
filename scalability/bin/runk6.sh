@@ -14,10 +14,10 @@ k6run 2_curiosity
 k6run 3_compliance_early
 sleep 2m
 k6run 4_compliance_mid
-sleep 2m
-k6run 5_compliance_peak
-sleep 5m
-k6run 6_compliance_tail
 sleep 5m
 k6run 7_auditing_bau
 k6run 8_research
+sleep 5m
+k6run 5_compliance_peak
+sleep 5m
+k6run 6_compliance_tail
